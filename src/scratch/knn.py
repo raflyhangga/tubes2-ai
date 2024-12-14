@@ -21,7 +21,7 @@ class KNNScratch:
         else:
             raise ValueError("Invalid distance type")
 
-    def fit(self, x: pd.DataFrame, y: pd.DataFrame):
+    def fit(self, x: pd.DataFrame, y: pd.Series):
         self.__x: np.ndarray = x.to_numpy(copy=True)
         self.__y: np.ndarray = y.to_numpy(copy=True)
         return self
