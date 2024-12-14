@@ -1,10 +1,15 @@
 import numpy as np
+import pandas as pd
 
 
 class KNNScratch:
 
     def __init__(self, n_neighbors: int = 3, metric: str = "euclidean", power: float = None):
         self.__n_neighbors: int = n_neighbors
+        
+        if metric == "minkowski" and power is None:
+            raise ValueError("Power must be provided for minkowski distance")
+        
         if metric == "minkowski":
             self.__power: float = power
         elif metric == "manhattan":
@@ -16,12 +21,13 @@ class KNNScratch:
         else:
             raise ValueError("Invalid distance type")
 
-    def fit(self, x: np.ndarray, y: np.ndarray):
-        self.__x: np.ndarray = x
-        self.__y: np.ndarray = y
+    def fit(self, x: pd.DataFrame, y: pd.DataFrame):
+        self.__x: np.ndarray = x.to_numpy(copy=True)
+        self.__y: np.ndarray = y.to_numpy(copy=True)
         return self
     
-    def predict(self, x: np.ndarray):
+    def predict(self, x: pd.DataFrame):
+        x = x.to_numpy(copy=True)
         y_pred = np.array([self.__predict_single(x_i) for x_i in x])
         return y_pred
     
@@ -45,29 +51,27 @@ if __name__ == "__main__":
     from sklearn.metrics import accuracy_score
     from sklearn.neighbors import KNeighborsClassifier
 
-    iris = load_iris()
-    x, y = iris.data, iris.target
+    x, y = load_iris(return_X_y=True, as_frame=True)
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+    print("y_test:")
+    print(y_test)
 
     # using scratch
     knn_scratch = KNNScratch(n_neighbors=5, metric="minkowski", power=3)
     knn_scratch.fit(x_train, y_train)
     y_pred_scratch = knn_scratch.predict(x_test)
     acc = accuracy_score(y_test, y_pred_scratch)
-    print("y_test:")
-    print(y_test)
     print("y_pred_scratch:")
     print(y_pred_scratch)
     print(f"Accuracy scratch: {acc}")
 
     # using sklearn
-    knn_sklearn = KNeighborsClassifier(n_neighbors=5, p=3)
+    knn_sklearn = KNeighborsClassifier(n_neighbors=5, metric="minkowski", p=3)
     knn_sklearn.fit(x_train, y_train)
     y_pred_sklearn = knn_sklearn.predict(x_test)
     acc = accuracy_score(y_test, y_pred_sklearn)
-    print("y_test:")
-    print(y_test)
-    print("y_pred_scratch:")
+    print("y_pred_sklearn:")
     print(y_pred_sklearn)
     print(f"Accuracy sklearn: {acc}")
 
