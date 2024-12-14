@@ -15,7 +15,7 @@ data = {
 
 df = pd.DataFrame(data)
 # print(df.head())
-# print(df["Nama"][0])
+print(df["Nama"])
 df2 = df[["Nama", "Usia", "Kota"]]
 # df2 = df["Nama", "Usia", "Kota"].apply(change_name)
 print(df)

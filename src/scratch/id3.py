@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+
 class Node:
     def __init__(self, attribute: str, value: str|int|float|bool, children: dict):
         self.attribute = attribute
@@ -6,8 +9,13 @@ class Node:
 
 class ID3:
     def __init__(self):
-        print("Ini konstruktor")
-        pass
+        self.tree : Node = None
+        self.list_attribute_names : list = ["Outlook", "Temperature", "Humidity", "Wind"] # None       HARDCODED
+        self.list_attribute_types : dict = {"Outlook": "categorical", "Temperature": "categorical", "Humidity": "categorical", "Wind": "categorical"} # None       HARDCODED
+        self.target_attribute : str = "PlayTennis" # None       HARDCODED
+        self.target_attribute_type : str = None
+        self.list_target_attribute_values : list = ["Yes", "No"] # None       HARDCODED
+
     
     """ 
         Function for training ID3 model 
@@ -23,17 +31,17 @@ class ID3:
         print("Ini train")
         pass
 
-    def plurality_value(self, data: dict) -> str|int|float|bool|None:
+    def plurality_value(self, data: dict, attribute: str) -> str|int|float|bool|None:
         """function for finding the most common value in data
 
         Args:
             data (dict): data
+            attribute (str): attribute
 
         Returns:
             str|int|float|bool|None: the most common value in data
         """
-        print("Ini plurality_value")
-        pass
+        return data[attribute].value_counts().idxmax()
 
     def is_homogeneous(self, data: dict) -> bool:
         """function for checking if data is homogeneous
@@ -44,11 +52,12 @@ class ID3:
         Returns:
             bool: True if data is homogeneous, otherwise False
         """
-        print("Ini is_homogeneous")
-        pass
+        return len(data[self.target_attribute].unique()) == 1
 
     def entropy(self, data: dict) -> float:
         """function for calculating entropy
+                entropy = -sum(p * log2(p))
+                p = frequency of each class / total data
 
         Args:
             data (dict): data
@@ -56,11 +65,12 @@ class ID3:
         Returns:
             float: entropy
         """
-        print("Ini entropy")
-        pass
-
+        entropy = -np.sum(data[self.target_attribute].value_counts() / len(data) * np.log2(data[self.target_attribute].value_counts() / len(data)))
+        return (entropy if (entropy != 0) else 0)
+        
     def information_gain(self, data: dict, attribute: str) -> float:
         """function for calculating information gain
+                information gain = entropy(parent) - sum(entropy(children) * (len(child) / len(parent))
 
         Args:
             data (dict): data
@@ -69,8 +79,17 @@ class ID3:
         Returns:
             float: information gain
         """
-        print("Ini information_gain")
-        pass
+        entropy_parent = self.entropy(data)
+        entropy_children = 0
+        if self.list_attribute_types[attribute] == "categorical":
+            for value in data[attribute].unique():
+                entropy_children += len(data[data[attribute] == value]) / len(data) * self.entropy(data[data[attribute] == value])
+        else:
+            break_point = self.break_point(data, attribute)
+            data_less_than = data[data[attribute] < break_point]
+            data_greater_than = data[data[attribute] >= break_point]
+            entropy_children = len(data_less_than) / len(data) * self.entropy(data_less_than) + len(data_greater_than) / len(data) * self.entropy(data_greater_than)
+        return entropy_parent - entropy_children
 
     def find_best_attribute(self, data: dict, attribute: str) -> str:
         """function for finding the best attribute
@@ -82,8 +101,7 @@ class ID3:
         Returns:
             str: the best attribute
         """
-        print("Ini find_best_attribute")
-        pass
+        return max(attribute, key=lambda x: self.information_gain(data, x))
 
     def split_data(self, data: dict, attribute: str) -> dict:
         """function for splitting data based on attribute
@@ -126,7 +144,7 @@ class ID3:
         print("Ini break_point")
         pass
 
-    def get_attribute_type(self, data: dict, attribute: str) -> str:
+    def set_attribute_type(self, data: dict) -> str:
         """function for getting attribute type
 
         Args:
@@ -136,7 +154,19 @@ class ID3:
         Returns:
             str: attribute type
         """
-        print("Ini get_attribute_type")
+        print("Ini set_attribute_type")
+        pass
+
+    def set_target_attribute_values(self, data: dict) -> list:
+        """function for getting target attribute values
+
+        Args:
+            data (dict): data
+
+        Returns:
+            list: target attribute values
+        """
+        print("Ini set_target_attribute_values")
         pass
 
 
@@ -199,3 +229,79 @@ class ID3:
         """
         print("Ini save_tree")
         pass
+
+if __name__ == "__main__":
+    example_data1 = {
+        "Day" : ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"],
+        "Outlook" : ["Sunny", "Sunny", "Overcast", "Rain", "Rain", "Rain", "Overcast", "Sunny", "Sunny", "Rain", "Sunny", "Overcast", "Overcast", "Rain"],
+        # "Temperature" : [85, 80, 83, 70, 68, 65, 64, 72, 69, 75, 75, 72, 81, 71],
+        "Temperature" : ["Hot", "Hot", "Hot", "Mild", "Cool", "Cool", "Cool", "Mild", "Cool", "Mild", "Mild", "Mild", "Hot", "Mild"],
+        "Humidity" : ["High", "High", "High", "High", "Normal", "Normal", "Normal", "High", "Normal", "Normal", "Normal", "High", "Normal", "High"],
+        "Wind" : ["Weak", "Strong", "Weak", "Weak", "Weak", "Strong", "Strong", "Weak", "Weak", "Weak", "Strong", "Strong", "Weak", "Strong"],
+        "PlayTennis" : ["No", "No", "Yes", "Yes", "Yes", "No", "Yes", "No", "Yes", "Yes", "Yes", "Yes", "Yes", "No"]
+    }
+
+    example_data2 = {
+        "Day" : ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13", "D14"],
+        "Outlook" : ["Sunny", "Sunny", "Overcast", "Rain", "Rain", "Rain", "Overcast", "Sunny", "Sunny", "Rain", "Sunny", "Overcast", "Overcast", "Rain"],
+        # "Temperature" : [85, 80, 83, 70, 68, 65, 64, 72, 69, 75, 75, 72, 81, 71],
+        "Temperature" : ["Hot", "Hot", "Hot", "Mild", "Cool", "Cool", "Cool", "Mild", "Cool", "Mild", "Mild", "Mild", "Hot", "Mild"],
+        "Humidity" : ["High", "High", "High", "High", "Normal", "Normal", "Normal", "High", "Normal", "Normal", "Normal", "High", "Normal", "High"],
+        "Wind" : ["Weak", "Strong", "Weak", "Weak", "Weak", "Strong", "Strong", "Weak", "Weak", "Weak", "Strong", "Strong", "Weak", "Strong"],
+        "PlayTennis" : ["Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes", "Yes"]
+    }
+
+    df1 = pd.DataFrame(example_data1)
+    df2 = pd.DataFrame(example_data2)
+    # print(df1)
+    # print(df2)
+
+    id3 = ID3()
+
+    """
+        Unit Test
+    """
+    # test plurality_value
+    print("======================= Test plurality_value =======================")
+    print(f'Plurality Value Outlook: {id3.plurality_value(df1, "Outlook")}')          # Sunny
+    print(f'Plurality Value Temperature: {id3.plurality_value(df1, "Temperature")}')  # Mild
+    print(f'Plurality Value Humidity: {id3.plurality_value(df1, "Humidity")}')        # High
+    print(f'Plurality Value Wind: {id3.plurality_value(df1, "Wind")}')                # Weak
+    print(f'Plurality Value PlayTennis: {id3.plurality_value(df1, "PlayTennis")}')    # Yes
+
+
+    # test is_homogeneous
+    print("======================= Test is_homogeneous =======================")
+    print(f'Is Homogeneous df1: {id3.is_homogeneous(df1)}')  # False
+    print(f'Is Homogeneous df2: {id3.is_homogeneous(df2)}')  # True
+
+
+    # test entropy
+    print("======================= Test entropy =======================")
+    # entropy for all data
+    print(f'Entropy df1: {id3.entropy(df1)}')  # 0.940286
+    print(f'Entropy df2: {id3.entropy(df2)}')  # 0.0
+
+    # entropy for Outlook = Sunny
+    df_sunny = df1[df1["Outlook"] == "Sunny"]
+    print(f'Entropy df_sunny: {id3.entropy(df_sunny)}')  # 0.970951
+
+    # entropy for Outlook = Overcast
+    df_overcast = df1[df1["Outlook"] == "Overcast"]
+    print(f'Entropy df_overcast: {id3.entropy(df_overcast)}')  # 0.0
+
+    # entropy for Outlook = Rain
+    df_rain = df1[df1["Outlook"] == "Rain"]
+    print(f'Entropy df_rain: {id3.entropy(df_rain)}')  # 0.970951
+
+
+    # test information_gain
+    print("======================= Test information_gain =======================")
+    print(f'Information Gain Outlook: {id3.information_gain(df1, "Outlook")}')          # 0.246749
+    print(f'Information Gain Temperature: {id3.information_gain(df1, "Temperature")}')  # 0.029223
+    print(f'Information Gain Humidity: {id3.information_gain(df1, "Humidity")}')        # 0.151835
+    print(f'Information Gain Wind: {id3.information_gain(df1, "Wind")}')                # 0.048127
+
+    # test find_best_attribute
+    print("======================= Test find_best_attribute =======================")
+    print(f'Best Attribute: {id3.find_best_attribute(df1, ["Outlook", "Temperature", "Humidity", "Wind"])}')  # Outlook
