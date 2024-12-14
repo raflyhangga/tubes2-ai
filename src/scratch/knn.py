@@ -2,6 +2,7 @@ import numpy as np
 
 
 class KNNScratch:
+
     def __init__(self, n_neighbors: int = 3, metric: str = "euclidean", power: float = None):
         self.__n_neighbors: int = n_neighbors
         if metric == "minkowski":
@@ -42,14 +43,33 @@ if __name__ == "__main__":
     from sklearn.datasets import load_iris
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score
+    from sklearn.neighbors import KNeighborsClassifier
 
     iris = load_iris()
     x, y = iris.data, iris.target
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-    
+
+    # using scratch
     knn_scratch = KNNScratch(n_neighbors=5, metric="minkowski", power=3)
     knn_scratch.fit(x_train, y_train)
-    y_pred = knn_scratch.predict(x_test)
-    
-    acc = accuracy_score(y_test, y_pred)
-    print(f"Accuracy: {acc}")
+    y_pred_scratch = knn_scratch.predict(x_test)
+    acc = accuracy_score(y_test, y_pred_scratch)
+    print("y_test:")
+    print(y_test)
+    print("y_pred_scratch:")
+    print(y_pred_scratch)
+    print(f"Accuracy scratch: {acc}")
+
+    # using sklearn
+    knn_sklearn = KNeighborsClassifier(n_neighbors=5, p=3)
+    knn_sklearn.fit(x_train, y_train)
+    y_pred_sklearn = knn_sklearn.predict(x_test)
+    acc = accuracy_score(y_test, y_pred_sklearn)
+    print("y_test:")
+    print(y_test)
+    print("y_pred_scratch:")
+    print(y_pred_sklearn)
+    print(f"Accuracy sklearn: {acc}")
+
+    # comparing predictions
+    print("Is both predictions same?", np.array_equal(y_pred_scratch, y_pred_sklearn))
