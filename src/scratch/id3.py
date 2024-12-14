@@ -6,6 +6,12 @@ class TreeNode:
         self.node = node        # attribute name
         self.branch = branch    # dictionary of branch (key: branch value, value: TreeNode)
 
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
+
+    def __getattr__(self, name):
+        return self.__dict__[name]
+
     def print_tree(self, level: int = 0):
         """function for printing the tree"""
         for key, value in self.branch.items():
@@ -24,7 +30,12 @@ class ID3:
 
     def __setattr__(self, name, value):
         self.__dict__[name] = value
+
+    def __getattr__(self, name):
+        return self.__dict__[name]
     
+
+
     """ 
         Function for training ID3 model 
     """
@@ -139,7 +150,7 @@ class ID3:
                     max_gain = gain
                     best_attribute = attr
             else:
-                temp_break_point = self.break_point(data, attr)
+                temp_break_point = self.find_break_point(data, attr)
                 gain = self.information_gain(data, attr, temp_break_point)
                 if gain > max_gain:
                     max_gain = gain
@@ -147,7 +158,7 @@ class ID3:
                     break_point = temp_break_point
         return best_attribute, break_point
 
-    def break_point(self, data: dict, attribute: str) -> dict:
+    def find_break_point(self, data: dict, attribute: str) -> float:
         """function for finding break point of continuous data
 
         Args:
@@ -155,10 +166,12 @@ class ID3:
             attribute (str): attribute
 
         Returns:
-            dict: break point
+            float: break point
         """
         max_gain = 0
         best_break_point = None
+        data = data.sort_values(by=attribute)
+        # print(f'data: {data}')
         # print(f'atribut: {attribute}')
         for i in range(len(data) - 2):
             # find two consecutive data with different target attribute (candiate for break point)
@@ -176,30 +189,60 @@ class ID3:
     """
         Function for predicting data
     """
-    def predict(self, data: dict):
-        """function for predicting data
+    def predict(self, unseen_data: dict) -> str:
+        """function for predicting unseen data
 
         Args:
-            data (dict): data
-        """
-        print("Ini predict")
-        pass
+            unseen_data (dict): unseen data
 
-    def predict_recursively(self, data: dict):
-        """function for predicting data recursively
+        Returns:
+            str: prediction
+        """
+        prediction = self.predict_recursively(unseen_data, self.tree)
+        return (prediction if prediction is not None else "Unknown") 
+        
+    def predict_recursively(self, unseen_data: dict, tree: TreeNode) -> str:
+        """function for predicting unseen data recursively
 
         Args:
-            data (dict): data
+            unseen_data (dict): unseen data
+            tree (TreeNode): tree
+
+        Returns:
+            str: prediction
         """
-        print("Ini predict_recursively")
-        pass
+        prediction = None
+        current_atribute = tree.node
+        if current_atribute == self.target_attribute:
+            prediction = tree.branch.keys().__iter__().__next__().split(" ")[1]
+        else:
+            for key, value in tree.branch.items():
+                if key.split(" ")[0] == "=":
+                    if unseen_data[current_atribute] == key.split(" ")[1]:
+                        if value is None:
+                            prediction = key.split(" ")[1]
+                        else:
+                            prediction = self.predict_recursively(unseen_data, value)
+                elif key.split(" ")[0] == "<":
+                    if unseen_data[current_atribute] < float(key.split(" ")[1]):
+                        if value is None:
+                            prediction = key.split(" ")[1]
+                        else:
+                            prediction = self.predict_recursively(unseen_data, value)
+                elif key.split(" ")[0] == ">=":
+                    if unseen_data[current_atribute] >= float(key.split(" ")[1]):
+                        if value is None:
+                            prediction = key.split(" ")[1]
+                        else:
+                            prediction = self.predict_recursively(unseen_data, value)
+        return prediction
 
 
 
     """
         Function for printing the tree
     """
-    def print_tree(self):
+    def print_tree(self) -> None:
         """function for printing the tree"""
         self.tree.print_tree()
 
@@ -223,8 +266,7 @@ class ID3:
         Args:
             filename (str): filename
         """
-        print("Ini save_tree")
-        pass
+        
 
 
 
@@ -336,7 +378,7 @@ if __name__ == "__main__":
         "PlayTennis": ["No", "No", "Yes", "Yes", "Yes", "No"]
     }
     df3 = pd.DataFrame(data3)
-    print(f'Best Break Point: {id3.break_point(df3, "Temperature2")}')
+    print(f'Best Break Point: {id3.find_break_point(df3, "Temperature2")}')
     print("")
     # Best Break Point: 54.0, Gain: 0.459148
     # Break Point: 54.0, Gain: 0.459148
@@ -348,7 +390,12 @@ if __name__ == "__main__":
     id3.tree = id3.train(df1, id3.list_attribute_names, {})
     id3.print_tree()
     print("")
-    id3.list_attribute_names = list_attribute_names2
-    id3.tree = id3.train(df1, id3.list_attribute_names, {})
-    id3.print_tree()
-    print("")
+    # id3.list_attribute_names = list_attribute_names2
+    # id3.tree = id3.train(df1, id3.list_attribute_names, {})
+    # id3.print_tree()
+    # print("")
+
+    # test predict
+    print("======================= Test predict =======================")
+    for i in range(len(df1)):
+        print(f'Prediction {i}: {id3.predict(df1.iloc[i])}')
