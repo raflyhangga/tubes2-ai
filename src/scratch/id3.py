@@ -11,7 +11,7 @@ class ID3:
     def __init__(self):
         self.tree : Node = None
         self.list_attribute_names : list = ["Outlook", "Temperature", "Humidity", "Wind"] # None       HARDCODED
-        self.list_attribute_types : dict = {"Outlook": "categorical", "Temperature": "categorical", "Humidity": "categorical", "Wind": "categorical"} # None       HARDCODED
+        self.list_attribute_types : dict = {"Outlook": "categorical", "Temperature": "categorical", "Temperature2": "numerical", "Humidity": "categorical", "Wind": "categorical"} # None       HARDCODED
         self.target_attribute : str = "PlayTennis" # None       HARDCODED
         self.target_attribute_type : str = None
         self.list_target_attribute_values : list = ["Yes", "No"] # None       HARDCODED
@@ -20,12 +20,12 @@ class ID3:
     """ 
         Function for training ID3 model 
     """
-    def train(self, data: dict, attribute: str, parent_data: dict) -> None:
+    def train(self, data: dict, attribute: list[str], parent_data: dict) -> None:
         """function for training ID3 model
 
         Args:
             data (dict): data for current node
-            attribute (str): the remaining attribute
+            attribute (list[str]): list of remaining attribute
             parent_data (dict): data from parent node
         """
         print("Ini train")
@@ -68,7 +68,7 @@ class ID3:
         entropy = -np.sum(data[self.target_attribute].value_counts() / len(data) * np.log2(data[self.target_attribute].value_counts() / len(data)))
         return (entropy if (entropy != 0) else 0)
         
-    def information_gain(self, data: dict, attribute: str) -> float:
+    def information_gain(self, data: dict, attribute: str, break_point: float = None) -> float:
         """function for calculating information gain
                 information gain = entropy(parent) - sum(entropy(children) * (len(child) / len(parent))
 
@@ -85,51 +85,22 @@ class ID3:
             for value in data[attribute].unique():
                 entropy_children += len(data[data[attribute] == value]) / len(data) * self.entropy(data[data[attribute] == value])
         else:
-            break_point = self.break_point(data, attribute)
             data_less_than = data[data[attribute] < break_point]
             data_greater_than = data[data[attribute] >= break_point]
             entropy_children = len(data_less_than) / len(data) * self.entropy(data_less_than) + len(data_greater_than) / len(data) * self.entropy(data_greater_than)
         return entropy_parent - entropy_children
 
-    def find_best_attribute(self, data: dict, attribute: str) -> str:
+    def find_best_attribute(self, data: dict, attribute: list[str]) -> str:
         """function for finding the best attribute
 
         Args:
             data (dict): data
-            attribute (str): the remaining attribute
+            attribute (list[str]): list of attribute
 
         Returns:
             str: the best attribute
         """
         return max(attribute, key=lambda x: self.information_gain(data, x))
-
-    def split_data(self, data: dict, attribute: str) -> dict:
-        """function for splitting data based on attribute
-
-        Args:
-            data (dict): data
-            attribute (str): attribute
-            value (str|int|float|bool): value of the attribute
-
-        Returns:
-            dict: splitted data
-        """
-        print("Ini split_data")
-        pass
-
-    def filter_data(self, data: dict, attribute: str, value: str|int|float|bool) -> dict:
-        """function for filtering data based on attribute and value
-
-        Args:
-            data (dict): data
-            attribute (str): attribute
-            value (str|int|float|bool): value of the attribute
-
-        Returns:
-            dict: filtered data
-        """
-        print("Ini filter_data")
-        pass
 
     def break_point(self, data: dict, attribute: str) -> dict:
         """function for finding break point of continuous data
@@ -141,8 +112,19 @@ class ID3:
         Returns:
             dict: break point
         """
-        print("Ini break_point")
-        pass
+        max_gain = 0
+        best_break_point = None
+        print(f'atribut: {attribute}')
+        for i in range(len(data) - 1):
+            # find two consecutive data with different target attribute (candiate for break point)
+            if data[self.target_attribute][i] != data[self.target_attribute][i + 1]:
+                break_point = (data[attribute][i] + data[attribute][i + 1]) / 2
+                gain = self.information_gain(data, attribute, break_point)
+                print(f'Break Point: {break_point}, Gain: {gain}')
+                if gain > max_gain:
+                    max_gain = gain
+                    best_break_point = break_point
+        return best_break_point
 
     def set_attribute_type(self, data: dict) -> str:
         """function for getting attribute type
@@ -305,3 +287,16 @@ if __name__ == "__main__":
     # test find_best_attribute
     print("======================= Test find_best_attribute =======================")
     print(f'Best Attribute: {id3.find_best_attribute(df1, ["Outlook", "Temperature", "Humidity", "Wind"])}')  # Outlook
+
+    # test break_point
+    print("======================= Test break_point =======================")
+    data3 = {
+        "Temperature2": [40, 48, 60, 72, 80, 90],
+        "PlayTennis": ["No", "No", "Yes", "Yes", "Yes", "No"]
+    }
+    df3 = pd.DataFrame(data3)
+    print(f'Best Break Point: {id3.break_point(df3, "Temperature2")}')
+    # Best Break Point: 54.0, Gain: 0.459148
+    # Break Point: 54.0, Gain: 0.459148
+    # Break Point: 85.0, Gain: 0.190875
+
