@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import json
 
 class TreeNode:
     def __init__(self, node: str, branch: dict):
@@ -19,6 +20,35 @@ class TreeNode:
             print(f'{self.node} {key}')
             if value is not None:
                 value.print_tree(level + 1)
+    
+    def tree_to_dict(self) -> dict:
+        """function for converting the tree into nested dictionary
+        
+        Returns:
+            dict: nested dictionary
+        """
+        data = {
+            self.node: {
+                key: (value.tree_to_dict() if value is not None else None) for key, value in self.branch.items()
+            }
+        }
+        return data
+    
+    def dict_to_tree(self, dictionary: dict) -> "TreeNode":
+        """function for converting nested dictionary into tree
+        
+        Args:
+            dictionary (dict): nested dictionary
+        
+        Returns:
+            TreeNode: tree
+        """
+        for key, value in dictionary.items():
+            self.node = key
+            self.branch = {
+                key: (TreeNode("", {}).dict_to_tree(value) if value is not None else None) for key, value in value.items()
+            }
+        return self
 
 class ID3:
     def __init__(self):
@@ -248,25 +278,34 @@ class ID3:
 
 
 
+    def save_tree(self, filename: str) -> None:
+        """function for saving the tree into file
+        
+        Args:
+            filename (str): filename
+        """
+        try:
+            with open("src/model/" + filename, "w") as f:
+                json.dump(self.tree.tree_to_dict(), f)
+            print("Tree saved successfully")
+        except:
+            print("Failed to save tree")
+    
     """
         Function for saving and loading the tree
     """
-    def load_tree(self, filename: str):
-        """function for loading the tree
+    def load_tree(self, filename: str) -> None:
+        """function for loading the tree from file
 
         Args:
             filename (str): filename
         """
-        print("Ini load_tree")
-        pass
-
-    def save_tree(self, filename: str):
-        """function for saving the tree
-        
-        Args:
-            filename (str): filename
-        """
-        
+        try:
+            with open("src/model/" + filename, "r") as f:
+                self.tree = TreeNode("", {}).dict_to_tree(json.load(f))
+            print("Tree loaded successfully")
+        except:
+            print("Failed to load tree")
 
 
 
@@ -303,99 +342,129 @@ if __name__ == "__main__":
     # print(df2)
 
     id3 = ID3()
-    id3.list_attribute_names = list_attribute_names1
-    id3.list_attribute_types = list_attribute_types
-    id3.target_attribute = target_attribute
-    id3.list_target_attribute_values = list_target_attribute_values
+    # id3.list_attribute_names = list_attribute_names1
+    # id3.list_attribute_types = list_attribute_types
+    # id3.target_attribute = target_attribute
+    # id3.list_target_attribute_values = list_target_attribute_values
 
-    print("======================= ID3 Model =======================")
-    print(id3.list_attribute_names)
-    print(id3.list_attribute_types)
-    print(id3.target_attribute)
-    print(id3.list_target_attribute_values)
-    print(id3.tree)
-    print("")
+    # print("======================= ID3 Model =======================")
+    # print(id3.list_attribute_names)
+    # print(id3.list_attribute_types)
+    # print(id3.target_attribute)
+    # print(id3.list_target_attribute_values)
+    # print(id3.tree)
+    # print("")
     
-    """
-        Unit Test
-    """
-    # test plurality_value
-    print("======================= Test plurality_value =======================")
-    print(f'Plurality Value Outlook: {id3.plurality_value(df1, "Outlook")}')          # Sunny
-    print(f'Plurality Value Temperature: {id3.plurality_value(df1, "Temperature1")}') # Mild
-    print(f'Plurality Value Humidity: {id3.plurality_value(df1, "Humidity")}')        # High
-    print(f'Plurality Value Wind: {id3.plurality_value(df1, "Wind")}')                # Weak
-    print(f'Plurality Value PlayTennis: {id3.plurality_value(df1, "PlayTennis")}')    # Yes
-    print("")
+    # """
+    #     Unit Test
+    # """
+    # # test plurality_value
+    # print("======================= Test plurality_value =======================")
+    # print(f'Plurality Value Outlook: {id3.plurality_value(df1, "Outlook")}')          # Sunny
+    # print(f'Plurality Value Temperature: {id3.plurality_value(df1, "Temperature1")}') # Mild
+    # print(f'Plurality Value Humidity: {id3.plurality_value(df1, "Humidity")}')        # High
+    # print(f'Plurality Value Wind: {id3.plurality_value(df1, "Wind")}')                # Weak
+    # print(f'Plurality Value PlayTennis: {id3.plurality_value(df1, "PlayTennis")}')    # Yes
+    # print("")
 
 
-    # test is_homogeneous
-    print("======================= Test is_homogeneous =======================")
-    print(f'Is Homogeneous df1: {id3.is_homogeneous(df1)}')  # False
-    print(f'Is Homogeneous df2: {id3.is_homogeneous(df2)}')  # True
-    print("")
+    # # test is_homogeneous
+    # print("======================= Test is_homogeneous =======================")
+    # print(f'Is Homogeneous df1: {id3.is_homogeneous(df1)}')  # False
+    # print(f'Is Homogeneous df2: {id3.is_homogeneous(df2)}')  # True
+    # print("")
 
 
-    # test entropy
-    print("======================= Test entropy =======================")
-    # entropy for all data
-    print(f'Entropy df1: {id3.entropy(df1)}')  # 0.940286
-    print(f'Entropy df2: {id3.entropy(df2)}')  # 0
+    # # test entropy
+    # print("======================= Test entropy =======================")
+    # # entropy for all data
+    # print(f'Entropy df1: {id3.entropy(df1)}')  # 0.940286
+    # print(f'Entropy df2: {id3.entropy(df2)}')  # 0
 
-    # entropy for Outlook = Sunny
-    df_sunny = df1[df1["Outlook"] == "Sunny"]
-    print(f'Entropy df_sunny: {id3.entropy(df_sunny)}')  # 0.970951
+    # # entropy for Outlook = Sunny
+    # df_sunny = df1[df1["Outlook"] == "Sunny"]
+    # print(f'Entropy df_sunny: {id3.entropy(df_sunny)}')  # 0.970951
 
-    # entropy for Outlook = Overcast
-    df_overcast = df1[df1["Outlook"] == "Overcast"]
-    print(f'Entropy df_overcast: {id3.entropy(df_overcast)}')  # 0
+    # # entropy for Outlook = Overcast
+    # df_overcast = df1[df1["Outlook"] == "Overcast"]
+    # print(f'Entropy df_overcast: {id3.entropy(df_overcast)}')  # 0
 
-    # entropy for Outlook = Rain
-    df_rain = df1[df1["Outlook"] == "Rain"]
-    print(f'Entropy df_rain: {id3.entropy(df_rain)}')  # 0.970951
-    print("")
-
-
-    # test information_gain
-    print("======================= Test information_gain =======================")
-    print(f'Information Gain Outlook: {id3.information_gain(df1, "Outlook")}')          # 0.246749
-    print(f'Information Gain Temperature: {id3.information_gain(df1, "Temperature1")}') # 0.029223
-    print(f'Information Gain Humidity: {id3.information_gain(df1, "Humidity")}')        # 0.151835
-    print(f'Information Gain Wind: {id3.information_gain(df1, "Wind")}')                # 0.048127
-    print("")
+    # # entropy for Outlook = Rain
+    # df_rain = df1[df1["Outlook"] == "Rain"]
+    # print(f'Entropy df_rain: {id3.entropy(df_rain)}')  # 0.970951
+    # print("")
 
 
-    # test find_best_attribute
-    print("======================= Test find_best_attribute =======================")
-    print(f'Best Attribute: {id3.find_best_attribute(df1, ["Outlook", "Temperature1", "Humidity", "Wind"])}')  # Outlook
-    print("")
+    # # test information_gain
+    # print("======================= Test information_gain =======================")
+    # print(f'Information Gain Outlook: {id3.information_gain(df1, "Outlook")}')          # 0.246749
+    # print(f'Information Gain Temperature: {id3.information_gain(df1, "Temperature1")}') # 0.029223
+    # print(f'Information Gain Humidity: {id3.information_gain(df1, "Humidity")}')        # 0.151835
+    # print(f'Information Gain Wind: {id3.information_gain(df1, "Wind")}')                # 0.048127
+    # print("")
 
 
-    # test break_point
-    print("======================= Test break_point =======================")
-    data3 = {
-        "Temperature2": [40, 48, 60, 72, 80, 90],
-        "PlayTennis": ["No", "No", "Yes", "Yes", "Yes", "No"]
-    }
-    df3 = pd.DataFrame(data3)
-    print(f'Best Break Point: {id3.find_break_point(df3, "Temperature2")}')
-    print("")
-    # Best Break Point: 54.0, Gain: 0.459148
-    # Break Point: 54.0, Gain: 0.459148
-    # Break Point: 85.0, Gain: 0.190875
+    # # test find_best_attribute
+    # print("======================= Test find_best_attribute =======================")
+    # print(f'Best Attribute: {id3.find_best_attribute(df1, ["Outlook", "Temperature1", "Humidity", "Wind"])}')  # Outlook
+    # print("")
 
 
-    # test train
-    print("======================= Test train =======================")
-    id3.tree = id3.train(df1, id3.list_attribute_names, {})
-    id3.print_tree()
-    print("")
-    # id3.list_attribute_names = list_attribute_names2
+    # # test break_point
+    # print("======================= Test break_point =======================")
+    # data3 = {
+    #     "Temperature2": [40, 48, 60, 72, 80, 90],
+    #     "PlayTennis": ["No", "No", "Yes", "Yes", "Yes", "No"]
+    # }
+    # df3 = pd.DataFrame(data3)
+    # print(f'Best Break Point: {id3.find_break_point(df3, "Temperature2")}')
+    # print("")
+    # # Best Break Point: 54.0, Gain: 0.459148
+    # # Break Point: 54.0, Gain: 0.459148
+    # # Break Point: 85.0, Gain: 0.190875
+
+
+    # # test train
+    # print("======================= Test train =======================")
     # id3.tree = id3.train(df1, id3.list_attribute_names, {})
     # id3.print_tree()
     # print("")
+    # # id3.list_attribute_names = list_attribute_names2
+    # # id3.tree = id3.train(df1, id3.list_attribute_names, {})
+    # # id3.print_tree()
+    # # print("")
+
+    #     # test tree_to_dict
+    # print("======================= Test tree_to_dict =======================")
+    # dict_tree = id3.tree.tree_to_dict()
+    # print(dict_tree)
+    # print("")
+
+    #     # test dict_to_tree
+    # print("======================= Test dict_to_tree =======================")
+    # tree = TreeNode("", {}).dict_to_tree(dict_tree)
+    # tree.print_tree()
+    # print("")
+
+    # # test predict
+    # print("======================= Test predict =======================")
+    # for i in range(len(df1)):
+    #     print(f'Prediction {i}: {id3.predict(df1.iloc[i])}')
+
+    # # test save_tree
+    # print("======================= Test save_tree =======================")
+    # id3.save_tree("tree.json")
+    # print("")
+
+    # test load_tree
+    print("======================= Test load_tree =======================")
+    id3.load_tree("tree.json")
+    print("")
+    id3.print_tree()
+    print("")
 
     # test predict
     print("======================= Test predict =======================")
     for i in range(len(df1)):
         print(f'Prediction {i}: {id3.predict(df1.iloc[i])}')
+    print("")    
