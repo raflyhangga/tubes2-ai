@@ -246,7 +246,7 @@ class IterativeDichotomiser3:
                 if gain > max_gain:
                     max_gain = gain
                     best_break_point = break_point
-        print(f'Best Break Point: {best_break_point}, Gain: {max_gain}')
+        # print(f'Best Break Point: {best_break_point}, Gain: {max_gain}')
         return best_break_point
 
 
