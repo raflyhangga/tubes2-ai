@@ -1,1 +1,0 @@
-{"Outlook": {"= Sunny": {"Humidity": {"= High": {"PlayTennis": {"= No": null}}, "= Normal": {"PlayTennis": {"= Yes": null}}}}, "= Overcast": {"PlayTennis": {"= Yes": null}}, "= Rain": {"Wind": {"= Weak": {"PlayTennis": {"= Yes": null}}, "= Strong": {"PlayTennis": {"= No": null}}}}}}
