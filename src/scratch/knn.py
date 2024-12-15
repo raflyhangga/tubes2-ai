@@ -1,129 +1,101 @@
 import numpy as np
 import pandas as pd
-
+from typing import List, Tuple, Optional, Union
 
 class KDTree:
-
-    def __init__(self, data, depth=0):
-        if len(data) > 0:
-            k = data.shape[1]
-            axis = depth % k
-            sorted_data = data[data[:, axis].argsort()]
-            median_index = len(sorted_data) // 2
-
-            self.location = sorted_data[median_index]
-            self.left = KDTree(sorted_data[:median_index], depth + 1)
-            self.right = KDTree(sorted_data[median_index + 1:], depth + 1)
-        else:
+    def __init__(self, data: np.ndarray, depth: int = 0, indices: Optional[np.ndarray] = None):
+        if indices is None:
+            indices = np.arange(len(data))
+        
+        if len(indices) == 0:
             self.location = None
-            self.left = None
-            self.right = None
-
-    def query(self, point, k=1, depth=0, best=None, metric="minkowski", power=2):
+            self.left = self.right = None
+            self.axis = None
+            return
+            
+        k = data.shape[1]
+        self.axis = depth % k
+        
+        idx = indices[data[indices, self.axis].argsort()]
+        median_idx = len(idx) // 2
+        
+        self.location = data[idx[median_idx]]
+        self.left = KDTree(data, depth + 1, idx[:median_idx])
+        self.right = KDTree(data, depth + 1, idx[median_idx + 1:])
+    
+    def query(self, point: np.ndarray, k: int = 1, depth: int = 0, 
+              heap: Optional[List[Tuple[np.ndarray, float]]] = None,
+              metric: str = "minkowski", power: float = 2) -> List[Tuple[np.ndarray, float]]:
         if self.location is None:
-            return best
-
-        if best is None:
-            best = []
-
-        k_dim = len(point)
-        axis = depth % k_dim
-
-        next_best = None
-        next_branch = None
-
+            return heap or []
+            
+        if heap is None:
+            heap = []
+            
+        axis = self.axis
+        dist = self._calculate_distance(point, self.location, metric, power)
+        
+        if len(heap) < k:
+            heap.append((self.location, dist))
+            heap.sort(key=lambda x: x[1], reverse=True) 
+        elif dist < heap[0][1]: 
+            heap[0] = (self.location, dist)
+            # Maintain heap property
+            for i in range(len(heap)-1):
+                if heap[i][1] < heap[i+1][1]:
+                    heap[i], heap[i+1] = heap[i+1], heap[i]
+                else:
+                    break
+                    
         if point[axis] < self.location[axis]:
-            next_branch = self.left
-            next_best = self.right
+            first, second = self.left, self.right
         else:
-            next_branch = self.right
-            next_best = self.left
-
-        best = next_branch.query(point, k, depth + 1, best, metric, power)
-
-        dist = self.calculate_distance(point, self.location, metric, power)
-        if len(best) < k or dist < best[-1][1]:
-            best.append((self.location, dist))
-            best = sorted(best, key=lambda x: x[1])[:k]
-
-        if len(best) < k or abs(point[axis] - self.location[axis]) < best[-1][1]:
-            best = next_best.query(point, k, depth + 1, best, metric, power)
-
-        return best
-
-    def calculate_distance(self, x1, x2, metric, power):
+            first, second = self.right, self.left
+            
+        if first is not None:
+            heap = first.query(point, k, depth + 1, heap, metric, power)
+            
+        if second is not None and (len(heap) < k or abs(point[axis] - self.location[axis]) < heap[0][1]):
+            heap = second.query(point, k, depth + 1, heap, metric, power)
+            
+        return sorted(heap, key=lambda x: x[1])
+    
+    @staticmethod
+    def _calculate_distance(x1: np.ndarray, x2: np.ndarray, metric: str, power: float) -> float:
+        diff = np.abs(x1 - x2)
         if metric == "manhattan":
-            return np.sum(np.abs(x1 - x2))
+            return np.sum(diff)
         elif metric == "euclidean":
-            return np.sqrt(np.sum((x1 - x2) ** 2))
+            return np.sqrt(np.sum(diff * diff))
         elif metric == "minkowski":
-            return np.sum(np.abs(x1 - x2) ** power) ** (1 / power)
+            return np.sum(diff ** power) ** (1 / power)
         elif metric == "chebyshev":
-            return np.max(np.abs(x1 - x2))
-        else:
-            raise ValueError("Invalid distance type")
+            return np.max(diff)
+        raise ValueError(f"Invalid distance metric: {metric}")
 
 
 class KNearestNeighbors:
-
     def __init__(self, n_neighbors: int = 5, metric: str = "minkowski", power: float = 2.0):
-        self.__n_neighbors: int = n_neighbors
-        self.__metric: str = metric
-        self.__power: float = power if metric == "minkowski" else None
-        self.__tree = None
-        self.__y = None
-        self.__classes = None
-
-    def fit(self, x: pd.DataFrame, y: pd.Series):
-        self.__x: np.ndarray = x.to_numpy(copy=True)
-        self.__tree = KDTree(self.__x)
-        self.__classes, self.__y = np.unique(y, return_inverse=True)
+        self._n_neighbors = n_neighbors
+        self._metric = metric
+        self._power = power if metric == "minkowski" else None
+        self._tree = None
+        self._y = None
+        self._classes = None
+        
+    def fit(self, x: Union[pd.DataFrame, np.ndarray], y: Union[pd.Series, np.ndarray]) -> 'KNearestNeighbors':
+        self._x = x.to_numpy() if isinstance(x, pd.DataFrame) else x
+        self._tree = KDTree(self._x)
+        self._classes, self._y = np.unique(y, return_inverse=True)
         return self
     
-    def predict(self, x: pd.DataFrame):
-        x = x.to_numpy(copy=True)
-        y_pred = np.array([self.__predict_single(x_i) for x_i in x])
-        y_pred = self.__classes[y_pred]
-        return y_pred
-    
-    def __predict_single(self, x: np.ndarray):
-        neighbors = self.__tree.query(x, k=self.__n_neighbors, metric=self.__metric, power=self.__power)
-        k_nearest_y = np.array([self.__y[np.where((self.__x == neighbor[0]).all(axis=1))[0][0]] for neighbor in neighbors])
-        most_common = np.bincount(k_nearest_y).argmax()
-        return most_common
-
-
-# Examples
-if __name__ == "__main__":
-
-    from sklearn.datasets import load_iris
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import accuracy_score
-    from sklearn.neighbors import KNeighborsClassifier
-
-    x, y = load_iris(return_X_y=True, as_frame=True)
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-
-    print("y_test:")
-    print(y_test)
-
-    # using scratch
-    knn_scratch = KNearestNeighbors(n_neighbors=5, metric="minkowski", power=3)
-    knn_scratch.fit(x_train, y_train)
-    y_pred_scratch = knn_scratch.predict(x_test)
-    acc = accuracy_score(y_test, y_pred_scratch)
-    print("y_pred_scratch:")
-    print(y_pred_scratch)
-    print(f"Accuracy scratch: {acc}")
-
-    # using sklearn
-    knn_sklearn = KNeighborsClassifier(n_neighbors=5, metric="minkowski", p=3)
-    knn_sklearn.fit(x_train, y_train)
-    y_pred_sklearn = knn_sklearn.predict(x_test)
-    acc = accuracy_score(y_test, y_pred_sklearn)
-    print("y_pred_sklearn:")
-    print(y_pred_sklearn)
-    print(f"Accuracy sklearn: {acc}")
-
-    # comparing predictions
-    print("Is both predictions same?", np.array_equal(y_pred_scratch, y_pred_sklearn))
+    def predict(self, x: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
+        x_array = x.to_numpy() if isinstance(x, pd.DataFrame) else x
+        
+        predictions = np.empty(len(x_array), dtype=int)
+        for i, x_i in enumerate(x_array):
+            neighbors = self._tree.query(x_i, k=self._n_neighbors, metric=self._metric, power=self._power)
+            indices = np.array([np.where((self._x == neighbor[0]).all(axis=1))[0][0] for neighbor in neighbors])
+            predictions[i] = np.bincount(self._y[indices]).argmax()
+            
+        return self._classes[predictions]
