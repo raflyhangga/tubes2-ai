@@ -50,7 +50,7 @@ class TreeNode:
             }
         return self
 
-class ID3:
+class IterativeDichotomiser3:
     def __init__(self):
         self.tree : TreeNode = None
         self.list_attribute_names : list = None
@@ -80,7 +80,7 @@ class ID3:
         if len(data) == 0:
             return TreeNode(self.target_attribute, {"= " + str(self.plurality_value(parent_data, self.target_attribute)): None})
         elif self.is_homogeneous(data):
-            return TreeNode(self.target_attribute, {"= " + (data[self.target_attribute].unique()[0]): None})
+            return TreeNode(self.target_attribute, {"= " + (data[self.target_attribute].iloc[0]): None})
         elif len(attribute) == 0:
             return TreeNode(self.target_attribute, {"= " + (self.plurality_value(data, self.target_attribute)): None})
         else:
@@ -135,7 +135,9 @@ class ID3:
         Returns:
             float: entropy
         """
-        entropy = -np.sum(data[self.target_attribute].value_counts() / len(data) * np.log2(data[self.target_attribute].value_counts() / len(data)))
+        count_unique = data[self.target_attribute].value_counts()
+        length_data = len(data)
+        entropy = -np.sum(count_unique / length_data * np.log2(count_unique / length_data))
         return (entropy if (entropy != 0) else 0)
         
     def information_gain(self, data: dict, attribute: str, break_point: float = None) -> float:
@@ -153,7 +155,8 @@ class ID3:
         entropy_children = 0
         if self.list_attribute_types[attribute] == "categorical":
             for value in data[attribute].unique():
-                entropy_children += len(data[data[attribute] == value]) / len(data) * self.entropy(data[data[attribute] == value])
+                data_for_each_value = data[data[attribute] == value]
+                entropy_children += len(data_for_each_value) / len(data) * self.entropy(data_for_each_value)
         else:
             data_less_than = data[data[attribute] < break_point]
             data_greater_than = data[data[attribute] >= break_point]
@@ -341,7 +344,7 @@ if __name__ == "__main__":
     # print(df1)
     # print(df2)
 
-    id3 = ID3()
+    id3 = IterativeDichotomiser3()
     # id3.list_attribute_names = list_attribute_names1
     # id3.list_attribute_types = list_attribute_types
     # id3.target_attribute = target_attribute
