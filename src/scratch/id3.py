@@ -81,7 +81,25 @@ class IterativeDichotomiser3:
     """ 
         Function for training ID3 model 
     """
-    def fit(self, data: dict, attribute: list[str], parent_data: dict) -> TreeNode:
+    def fit(self, data: dict, target_name: str) -> None:
+        """function for fitting the model
+
+        Args:
+            data (dict): data
+            target_name (str): target attribute
+
+        Returns:
+            None
+        """
+        self.list_attribute_names = data.columns.tolist()
+        self.list_attribute_names.remove(target_name)
+        self.list_attribute_names.remove("id")
+        self.list_attribute_types = {attr: "numerical" for attr in self.list_attribute_names}
+        self.target_attribute = target_name
+        self.list_target_attribute_values = data[target_name].unique().tolist()
+        self.tree = self.train(data, self.list_attribute_names, data)
+    
+    def train(self, data: dict, attribute: list[str], parent_data: dict) -> TreeNode:
         """function for training ID3 model
 
         Args:
@@ -236,7 +254,7 @@ class IterativeDichotomiser3:
     """
         Function for predicting data
     """
-    def predict(self, unseen_data: dict) -> str:
+    def predict_row(self, unseen_data: dict) -> str:
         """function for predicting unseen data
 
         Args:
@@ -287,7 +305,7 @@ class IterativeDichotomiser3:
         # print(f'Unseen Data: {unseen_data}')
         return (prediction if prediction is not None else tree.default)
 
-    def predict_batch(self, unseen_data: pd.DataFrame) -> np.ndarray:
+    def predict(self, unseen_data: pd.DataFrame) -> np.ndarray:
         """function for predicting unseen data in batch
 
         Args:
@@ -298,7 +316,7 @@ class IterativeDichotomiser3:
         """
         predictions = []
         for i in range(len(unseen_data)):
-            predictions.append(self.predict(unseen_data.iloc[i]))
+            predictions.append(self.predict_row(unseen_data.iloc[i]))
         return np.array(predictions)
 
 
@@ -356,8 +374,8 @@ class IterativeDichotomiser3:
 
 if __name__ == "__main__":
     pass
-    # train_set = pd.read_csv("src/scratch/train_set_transform.csv")
-    # val_set = pd.read_csv("src/scratch/val_set_transform.csv")
+    train_set = pd.read_csv("src/scratch/train_set_transform.csv")
+    val_set = pd.read_csv("src/scratch/val_set_transform.csv")
     
     # list_attribute_names = train_set.columns.tolist()
     # list_attribute_names.remove("attack_cat")
@@ -367,9 +385,11 @@ if __name__ == "__main__":
     # # print(list_attribute_types)
     # target_attribute = "attack_cat"
     # list_target_attribute_values = train_set[target_attribute].unique().tolist()
-    # # print(list_target_attribute_values)
+    # print(list_target_attribute_values)
 
-    # id3 = IterativeDichotomiser3()
+    id3 = IterativeDichotomiser3()
+    id3.fit(train_set, "attack_cat")
+    print(id3.tree)
     # # id3.list_attribute_names = list_attribute_names
     # # id3.list_attribute_types = list_attribute_types
     # # id3.target_attribute = target_attribute
@@ -531,7 +551,7 @@ if __name__ == "__main__":
     # # # test predict
     # # print("======================= Test predict =======================")
     # # for i in range(len(df1)):
-    # #     print(f'Prediction {i}: {id3.predict(df1.iloc[i])}')
+    # #     print(f'Prediction {i}: {id3.predict_row(df1.iloc[i])}')
 
     # # # test save_tree
     # # print("======================= Test save_tree =======================")
@@ -548,5 +568,5 @@ if __name__ == "__main__":
     # # # test predict
     # # print("======================= Test predict =======================")
     # # for i in range(len(df1)):
-    # #     print(f'Prediction {i}: {id3.predict(df1.iloc[i])}')
+    # #     print(f'Prediction {i}: {id3.predict_row(df1.iloc[i])}')
     # # print("")    
