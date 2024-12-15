@@ -235,23 +235,28 @@ class IterativeDichotomiser3:
         Returns:
             float: break point
         """
-        best_break_point = (data[attribute].iloc[0] + data[attribute].iloc[1]) / 2
-        max_gain = self.information_gain(data, attribute, best_break_point)
-        data = data.sort_values(by=attribute)
-        # print(f'data: {data}')
-        # print(f'atribut: {attribute}')
-        for i in range(0, len(data) - 2, 5000):
-            # find two consecutive data with different target attribute (candiate for break point)
-            if data[self.target_attribute].iloc[i] != data[self.target_attribute].iloc[i + 1]:
-                break_point = (data[attribute].iloc[i] + data[attribute].iloc[i + 1]) / 2
-                gain = self.information_gain(data, attribute, break_point)
-                # print(f'Break Point: {break_point}, Gain: {gain}')
-                if gain > max_gain:
-                    max_gain = gain
-                    best_break_point = break_point
-        # print(f'Best Break Point: {best_break_point}, Gain: {max_gain}')
-        return best_break_point
+        # print(f'Attribute: {attribute}')
+        # persentile = np.percentile(data[attribute], [33, 66])
+        # gain = max(info_gain := [self.information_gain(data, attribute, persentile[i]) for i in range(2)])
+        # return persentile[info_gain.index(gain)]
 
+        # data = data.sort_values(by=attribute)
+        # best_break_point = (data[attribute].iloc[0] + data[attribute].iloc[1]) / 2
+        # max_gain = self.information_gain(data, attribute, best_break_point)
+        # for i in range(2, len(data) - 1, 10000):
+        #     # find two consecutive data with different target attribute (candiate for break point)
+        #     if data[self.target_attribute].iloc[i] != data[self.target_attribute].iloc[i + 1]:
+        #         break_point = (data[attribute].iloc[i] + data[attribute].iloc[i + 1]) / 2
+        #         gain = self.information_gain(data, attribute, break_point)
+        #         if gain > max_gain:
+        #             max_gain = gain
+        #             best_break_point = break_point
+        # print(f'Best Break Point: {best_break_point}, Gain: {max_gain}')
+        # return best_break_point
+        # print(f'Attribute: {attribute}')
+
+        # to speed up the process, we can use the mean of the data as break point
+        return data[attribute].mean()
 
 
     """
