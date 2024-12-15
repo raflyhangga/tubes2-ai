@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-class KNNScratch:
+class KNearestNeighbors:
 
     def __init__(self, n_neighbors: int = 3, metric: str = "euclidean", power: float = None):
         self.__n_neighbors: int = n_neighbors
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     print(y_test)
 
     # using scratch
-    knn_scratch = KNNScratch(n_neighbors=5, metric="minkowski", power=3)
+    knn_scratch = KNearestNeighbors(n_neighbors=5, metric="minkowski", power=3)
     knn_scratch.fit(x_train, y_train)
     y_pred_scratch = knn_scratch.predict(x_test)
     acc = accuracy_score(y_test, y_pred_scratch)
