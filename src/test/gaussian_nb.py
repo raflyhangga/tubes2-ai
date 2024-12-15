@@ -9,7 +9,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from typing import Tuple, List
 import warnings
-warnings.filterwarnings('ignore')
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scratch.gaussian_nb import GaussianNaiveBayes
