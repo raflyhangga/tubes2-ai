@@ -90,9 +90,9 @@ class IterativeDichotomiser3:
         self.target_attribute = target_name
         self.list_target_attribute_values = data[target_name].unique().tolist()
 
-        self.tree = self.train(data, self.list_attribute_names, {}, self.max_depth)
+        self.tree = self.__train(data, self.list_attribute_names, {}, self.max_depth)
     
-    def train(self, data: dict, attribute: list[str], parent_data: dict, depth: int) -> TreeNode:
+    def __train(self, data: dict, attribute: list[str], parent_data: dict, depth: int) -> TreeNode:
         """function for training ID3 model
 
         Args:
@@ -109,26 +109,26 @@ class IterativeDichotomiser3:
         """
         if depth == 0:
             return TreeNode(self.target_attribute, 
-                            {"= " + str(self.plurality_value(parent_data, self.target_attribute)): None},
-                            self.plurality_value(parent_data, self.target_attribute))
+                            {"= " + str(self.__plurality_value(parent_data, self.target_attribute)): None},
+                            self.__plurality_value(parent_data, self.target_attribute))
         elif len(data) == 0:
             return TreeNode(self.target_attribute, 
-                            {"= " + str(self.plurality_value(parent_data, self.target_attribute)): None}, 
-                            self.plurality_value(parent_data, self.target_attribute))
-        elif self.is_homogeneous(data):
+                            {"= " + str(self.__plurality_value(parent_data, self.target_attribute)): None}, 
+                            self.__plurality_value(parent_data, self.target_attribute))
+        elif self.__is_homogeneous(data):
             return TreeNode(self.target_attribute, 
                             {"= " + (data[self.target_attribute].iloc[0]): None}, 
                             data[self.target_attribute].iloc[0])
         elif len(attribute) == 0:
             return TreeNode(self.target_attribute, 
-                            {"= " + (self.plurality_value(data, self.target_attribute)): None}, 
-                            self.plurality_value(data, self.target_attribute))
+                            {"= " + (self.__plurality_value(data, self.target_attribute)): None}, 
+                            self.__plurality_value(data, self.target_attribute))
         else:
             # find the best attribute
-            best_attribute, break_point = self.find_best_attribute(data, attribute)
+            best_attribute, break_point = self.__find_best_attribute(data, attribute)
             tree = TreeNode(best_attribute, 
                             {}, 
-                            self.plurality_value(data, self.target_attribute))
+                            self.__plurality_value(data, self.target_attribute))
             # print(f'{depth} Best Attribute: {best_attribute}, Break Point: {break_point}')
 
             # split the data
@@ -140,12 +140,12 @@ class IterativeDichotomiser3:
             new_attribute.remove(best_attribute)
 
             # train the tree recursively
-            tree.branch["< " + str(break_point)] = self.train(new_data_less_than, new_attribute, data, depth - 1)
-            tree.branch[">= " + str(break_point)] = self.train(new_data_greater_than, new_attribute, data, depth - 1)
+            tree.branch["< " + str(break_point)] = self.__train(new_data_less_than, new_attribute, data, depth - 1)
+            tree.branch[">= " + str(break_point)] = self.__train(new_data_greater_than, new_attribute, data, depth - 1)
             
             return tree
 
-    def plurality_value(self, data: dict, attribute: str) -> str|float:
+    def __plurality_value(self, data: dict, attribute: str) -> str|float:
         """function for finding the most common value in data
 
         Args:
@@ -157,7 +157,7 @@ class IterativeDichotomiser3:
         """
         return data[attribute].value_counts().idxmax()
 
-    def is_homogeneous(self, data: dict) -> bool:
+    def __is_homogeneous(self, data: dict) -> bool:
         """function for checking if data is homogeneous
 
         Args:
@@ -168,7 +168,7 @@ class IterativeDichotomiser3:
         """
         return len(data[self.target_attribute].unique()) == 1
 
-    def entropy(self, data: dict) -> float:
+    def __entropy(self, data: dict) -> float:
         """function for calculating entropy
                 entropy = -sum(p * log2(p))
                 p = frequency of each class / total data
@@ -184,7 +184,7 @@ class IterativeDichotomiser3:
         entropy = -np.sum(count_unique / length_data * np.log2(count_unique / length_data))
         return (entropy if (entropy != 0) else 0)
         
-    def information_gain(self, data: dict, attribute: str, break_point: float = None) -> float:
+    def __information_gain(self, data: dict, attribute: str, break_point: float = None) -> float:
         """function for calculating information gain
                 information gain = entropy(parent) - sum(entropy(children) * (len(child) / len(parent))
 
@@ -196,14 +196,14 @@ class IterativeDichotomiser3:
         Returns:
             float: information gain
         """
-        entropy_parent = self.entropy(data)
+        entropy_parent = self.__entropy(data)
         entropy_children = 0
         data_less_than = data[data[attribute] < break_point]
         data_greater_than = data[data[attribute] >= break_point]
-        entropy_children = (len(data_less_than) / len(data) * self.entropy(data_less_than)) + (len(data_greater_than) / len(data) * self.entropy(data_greater_than))
+        entropy_children = (len(data_less_than) / len(data) * self.__entropy(data_less_than)) + (len(data_greater_than) / len(data) * self.__entropy(data_greater_than))
         return entropy_parent - entropy_children
 
-    def find_best_attribute(self, data: dict, attribute: list[str]) -> tuple:
+    def __find_best_attribute(self, data: dict, attribute: list[str]) -> tuple:
         """function for finding the best attribute
 
         Args:
@@ -217,15 +217,15 @@ class IterativeDichotomiser3:
         best_attribute = None
         break_point = None
         for attr in attribute:
-            temp_break_point = self.find_break_point(data, attr)
-            gain = self.information_gain(data, attr, temp_break_point)
+            temp_break_point = self.__find_break_point(data, attr)
+            gain = self.__information_gain(data, attr, temp_break_point)
             if gain > max_gain:
                 max_gain = gain
                 best_attribute = attr
                 break_point = temp_break_point
         return best_attribute, break_point
 
-    def find_break_point(self, data: dict, attribute: str) -> float:
+    def __find_break_point(self, data: dict, attribute: str) -> float:
         """function for finding break point of continuous data
 
         Args:
@@ -237,17 +237,17 @@ class IterativeDichotomiser3:
         """
         # print(f'Attribute: {attribute}')
         # persentile = np.percentile(data[attribute], [33, 66])
-        # gain = max(info_gain := [self.information_gain(data, attribute, persentile[i]) for i in range(2)])
+        # gain = max(info_gain := [self.__information_gain(data, attribute, persentile[i]) for i in range(2)])
         # return persentile[info_gain.index(gain)]
 
         # data = data.sort_values(by=attribute)
         # best_break_point = (data[attribute].iloc[0] + data[attribute].iloc[1]) / 2
-        # max_gain = self.information_gain(data, attribute, best_break_point)
+        # max_gain = self.__information_gain(data, attribute, best_break_point)
         # for i in range(2, len(data) - 1, 10000):
         #     # find two consecutive data with different target attribute (candiate for break point)
         #     if data[self.target_attribute].iloc[i] != data[self.target_attribute].iloc[i + 1]:
         #         break_point = (data[attribute].iloc[i] + data[attribute].iloc[i + 1]) / 2
-        #         gain = self.information_gain(data, attribute, break_point)
+        #         gain = self.__information_gain(data, attribute, break_point)
         #         if gain > max_gain:
         #             max_gain = gain
         #             best_break_point = break_point
@@ -262,7 +262,7 @@ class IterativeDichotomiser3:
     """
         Function for predicting data
     """
-    def predict_row(self, unseen_data: dict) -> str:
+    def __predict_row(self, unseen_data: dict) -> str:
         """function for predicting unseen data
 
         Args:
@@ -271,10 +271,10 @@ class IterativeDichotomiser3:
         Returns:
             str: prediction
         """
-        prediction = self.predict_recursively(unseen_data, self.tree)
+        prediction = self.__predict_recursively(unseen_data, self.tree)
         return prediction
         
-    def predict_recursively(self, unseen_data: dict, tree: TreeNode) -> str:
+    def __predict_recursively(self, unseen_data: dict, tree: TreeNode) -> str:
         """function for predicting unseen data recursively
 
         Args:
@@ -295,19 +295,19 @@ class IterativeDichotomiser3:
                         if value is None:
                             prediction = key.split(" ")[1]
                         else:
-                            prediction = self.predict_recursively(unseen_data, value)
+                            prediction = self.__predict_recursively(unseen_data, value)
                 elif key.split(" ")[0] == "<":
                     if unseen_data[current_atribute] < float(key.split(" ")[1]):
                         if value is None:
                             prediction = key.split(" ")[1]
                         else:
-                            prediction = self.predict_recursively(unseen_data, value)
+                            prediction = self.__predict_recursively(unseen_data, value)
                 elif key.split(" ")[0] == ">=":
                     if unseen_data[current_atribute] >= float(key.split(" ")[1]):
                         if value is None:
                             prediction = key.split(" ")[1]
                         else:
-                            prediction = self.predict_recursively(unseen_data, value)
+                            prediction = self.__predict_recursively(unseen_data, value)
         return (prediction if prediction is not None else tree.default)
 
     def predict(self, unseen_data: pd.DataFrame) -> np.ndarray:
@@ -321,7 +321,7 @@ class IterativeDichotomiser3:
         """
         predictions = []
         for i in range(len(unseen_data)):
-            predictions.append(self.predict_row(unseen_data.iloc[i]))
+            predictions.append(self.__predict_row(unseen_data.iloc[i]))
         return np.array(predictions)
 
 
