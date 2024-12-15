@@ -237,7 +237,7 @@ class IterativeDichotomiser3:
         data = data.sort_values(by=attribute)
         # print(f'data: {data}')
         # print(f'atribut: {attribute}')
-        for i in range(0, len(data) - 2, 1000):
+        for i in range(0, len(data) - 2, 5000):
             # find two consecutive data with different target attribute (candiate for break point)
             if data[self.target_attribute].iloc[i] != data[self.target_attribute].iloc[i + 1]:
                 break_point = (data[attribute].iloc[i] + data[attribute].iloc[i + 1]) / 2
